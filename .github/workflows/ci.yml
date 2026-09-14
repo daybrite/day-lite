@@ -1,0 +1,41 @@
+name: ci
+
+# Does the crate build, lint, and pass its tests on Linux, macOS, and Windows against day's newest
+# main? These are the checks day's own CI ran on it before the crate moved here: clippy on Linux,
+# and the host test run on all three operating systems.
+#
+# No Cargo.lock is committed: this crate tracks an unpublished framework by its bare git URL, so
+# every run resolves day afresh at the tip of main and proves the crate against it. A red run
+# after a day push is the signal, and there is no pinned lock for a local `day patch` table to
+# rewrite and commit by accident.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Daily: day's main moves on weeks nobody pushes here.
+    - cron: "0 5 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  # One row per operating system, because each compiles the C underneath with a different
+  # toolchain: rquickjs builds QuickJS and runs bindgen over its headers, and day-persistence
+  # builds the bundled SQLite. That is gcc on Linux, Apple clang on macOS, and MSVC on Windows.
+  host:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --all -- --check
+        if: runner.os == 'Linux'
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test

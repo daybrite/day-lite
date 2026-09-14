@@ -1,6 +1,6 @@
 ---
 title: "day-lite: miniapps"
-description: "Dynamic miniapps on day: sandboxed dayscript-defined UI loaded at runtime, and the security model around it."
+description: "JavaScript and TypeScript miniapps on day's native pieces, embedded in a host app, and the security model around them."
 ---
 
 <!--
@@ -19,10 +19,11 @@ compiled day app uses. The model generally follows the
 package of pages with app/page lifecycles, declared permissions, and platform-provided storage,
 network, and sensor services.
 
-The reference superapp — a catalog browser that installs, updates, and runs miniapps (§12) —
-lived at `day/apps/daylite` and was removed from this repository in 2026-08. Everything it did
-went through the public embedding API: a superapp ships its own piece/part/tweak sets and its
-own permission policy (§10), and none of that needs to live here.
+The reference superapp, a catalog browser that installs, updates, and runs miniapps (§12),
+lived at `day/apps/daylite` and was removed from the day repository in 2026-08. This crate moved
+out of that repository into its own in 2026-09. Everything the superapp did went through the
+public embedding API: a superapp ships its own piece/part/tweak sets and its own permission policy
+(§10), and none of that needs to live in this crate.
 
 Initial platform support is the three mobile targets (ios-uikit, android-mdc, harmony-arkui);
 the design has no mobile-specific dependencies, so desktop toolkits can follow later.
@@ -244,7 +245,7 @@ each carry `en`, `fr`, `ar`, and `zh-CN` catalogs.
 scripts. Position *n* runs exactly once, tracked in sqlite's `user_version` pragma; on
 launch the app calls `migrate` with its full history and day-lite applies the tail. Editing
 history instead of appending is an error (a recorded hash per step catches it). The engine is
-day-persistence's driver ([docs/persistence.md](persistence.md)), so a superapp carrying both
+day-persistence's driver (day's [docs/persistence.md](https://github.com/daybrite/day/blob/main/docs/persistence.md)), so a superapp carrying both
 crates compiles one SQLite and its engine features (`sqlite-system`, `sqlite-cipher`) govern
 miniapp storage too.
 
@@ -369,7 +370,7 @@ is the shape a superapp needs rather than a description of one program. Three su
    repo; this is also the dev loop for miniapp authors (point it at a working tree, edits
    apply on next launch).
 
-Running apps present in a fullscreen cover ([docs/cover.md](cover.md)) with the X affordance;
+Running apps present in a fullscreen cover (day's [docs/cover.md](https://github.com/daybrite/day/blob/main/docs/cover.md)) with the X affordance;
 `window.background_color` seeds the cover background.
 
 ## 13. Build integration
