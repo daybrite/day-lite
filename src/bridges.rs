@@ -3,7 +3,7 @@
 
 //! Host bridges (docs/lite.md §7, §10): native capabilities exposed to scripts, each
 //! behind a permission id. A bridge installs its namespace whether or not the permission
-//! was granted — ungranted entry points REJECT with `PermissionError` so feature detection
+//! was granted; ungranted entry points reject with `PermissionError` so feature detection
 //! is `day.can('NETWORK')`, never try/catch guessing.
 
 use rquickjs::{Ctx, Function, Value};
@@ -14,14 +14,14 @@ use crate::engine::{throw, with_services};
 use crate::value::from_js;
 
 /// One native capability. `install` runs at context setup with `granted` resolved from the
-/// manifest + the user's grants; it must install BOTH the granted and the rejecting shape.
+/// manifest + the user's grants; it must install both the granted and the rejecting shape.
 pub struct Bridge {
     pub namespace: &'static str,
     pub permission: &'static str,
     pub install: fn(&Ctx<'_>, bool) -> rquickjs::Result<()>,
 }
 
-/// `day.net.fetch(url, opts?)` over day-part-http (docs/lite.md §7). Wants NETWORK; URLs
+/// `day.net.fetch(url, opts?)` over day-part-http (docs/lite.md §7). Wants `NETWORK`; URLs
 /// must match a `day.net_origins` prefix from the manifest.
 pub fn net() -> Bridge {
     Bridge {

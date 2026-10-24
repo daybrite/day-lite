@@ -12,14 +12,14 @@ license = "MPL-2.0"
 # from git, exactly as they depend on day.
 publish = false
 
-# Every day dependency names the BARE canonical URL — no branch, tag, or rev. Cargo unifies a git
+# Every day dependency names the bare canonical URL: no branch, tag, or rev. Cargo unifies a git
 # dependency only when URL and ref match, so an app on `git = "…/day.git"` and a crate pinned to
 # a tag would carry two copies of every day crate; leaving the ref off lets the app's Cargo.lock
 # choose one revision for the whole graph. No lock is committed here (see .gitignore), and
 # `compat` below says which day minor this release is built and tested against.
 
 [features]
-# The bundled SQLite, on by default — the engine every mobile target cross-compiles. A
+# The bundled SQLite, on by default: the engine every mobile target cross-compiles. A
 # superapp linking the OS's libsqlite3 instead uses default-features = false and picks its
 # engine through day-persistence's own features.
 default = ["bundled"]
@@ -27,7 +27,7 @@ bundled = ["day-persistence/bundled"]
 
 [package.metadata.day]
 # The day minor this release is built and tested against. `day build` notes a mismatch.
-compat = "0.4"
+compat = "0.5"
 
 [dependencies]
 log = "0.4"
@@ -51,13 +51,14 @@ oxc_transformer = "0.150"
 oxc_codegen = "0.150"
 oxc_span = "0.150"
 
-# Built-in persistence (docs/lite.md §7) rides day-persistence's driver seam, so a superapp
-# carrying both compiles ONE SQLite and the app's engine features (`sqlite-system`,
-# `sqlite-cipher`) govern miniapp storage too. The `bundled` default keeps the engine every
-# mobile target cross-compiles; a system-engine build turns it off (default-features = false).
-day-persistence = { git = "https://github.com/daybrite/day.git", default-features = false, features = ["driver-rusqlite"] }
+# Built-in persistence (docs/lite.md §7) rides day-persistence's `SqliteDriver` trait, so a
+# superapp carrying both compiles one SQLite and the engine features the app picks on
+# day-persistence (`system`, `cipher`) govern miniapp storage too. The `bundled` default keeps
+# the engine every mobile target cross-compiles; a system-engine build turns it off
+# (default-features = false).
+day-persistence = { git = "https://github.com/daybrite/day-persistence.git", default-features = false, features = ["driver-rusqlite"] }
 
-# Per-miniapp Fluent bundles (docs/lite.md §7) — same crate/version day-l10n builds on.
+# Per-miniapp Fluent bundles (docs/lite.md §7), the same crate/version day-l10n builds on.
 fluent-bundle = "0.16"
 day-l10n = { git = "https://github.com/daybrite/day.git" }
 

@@ -3,7 +3,7 @@
 
 //! The `day lite test` core (docs/lite.md §11): run a miniapp's `tests/*.test.ts` headlessly.
 //! Tests get the full `day.*` API against a throwaway store (fresh sqlite + fs sandbox per
-//! run); the network bridge is installed UNGRANTED, so `day.net.fetch` always rejects —
+//! run); the network bridge is installed ungranted, so `day.net.fetch` always rejects and
 //! tests never touch the live network. v1 tests are synchronous (an async test is reported
 //! as a failure with a clear message rather than silently passing).
 
@@ -96,7 +96,7 @@ pub fn run_tests(dir: &Path) -> Result<Vec<TestOutcome>, String> {
     let app_id = plan.manifest.app_id.clone();
     plan.confirm(&declared).map_err(|e| e.to_string())?;
 
-    // Grant everything declared EXCEPT network (never live in tests) + the storage set.
+    // Grant everything declared except network (never live in tests) + the storage set.
     let mut granted: Vec<String> = declared
         .into_iter()
         .filter(|p| p != crate::permission::NETWORK)

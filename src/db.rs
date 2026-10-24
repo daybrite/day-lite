@@ -7,8 +7,8 @@
 //! appending) is caught rather than silently divergent.
 //!
 //! The engine is day-persistence's driver ([`day_persistence::Sqlite`]): a superapp carrying
-//! both crates compiles ONE SQLite, and the app's engine features (`sqlite-system`,
-//! `sqlite-cipher`) govern miniapp storage too. Journal mode stays SQLite's default, as it
+//! both crates compiles one SQLite, and the engine features the app picks on day-persistence
+//! (`system`, `cipher`) govern miniapp storage too. Journal mode stays SQLite's default, as it
 //! always was for these files.
 
 use std::cell::RefCell;
@@ -105,7 +105,7 @@ impl Db {
                 steps.len()
             )));
         }
-        // Recorded prefix must match verbatim — history is append-only.
+        // Recorded prefix must match verbatim; history is append-only.
         for (i, step) in steps.iter().take(applied as usize).enumerate() {
             let mut want: Option<String> = None;
             conn.query(

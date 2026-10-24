@@ -399,7 +399,7 @@ fn load_entry(entry: &str) -> Result<String, String> {
     }
 }
 
-/// Build one page's piece tree by invoking its JS builder (outside any `Context::with` —
+/// Build one page's piece tree by invoking its JS builder (outside any `Context::with`;
 /// the callback enters the context itself). Unknown routes render a plain error label so a
 /// script bug degrades visibly.
 fn build_page(route: &str, params_json: &str) -> AnyPiece {
@@ -449,9 +449,11 @@ pub fn json_to_dyn(v: &serde_json::Value) -> DynValue {
 
 pub fn dyn_to_json(v: &DynValue) -> serde_json::Value {
     match v {
-        DynValue::Null | DynValue::Fn(_) | DynValue::Signal(_) | DynValue::Piece(_) => {
-            serde_json::Value::Null
-        }
+        DynValue::Null
+        | DynValue::ElementId(_)
+        | DynValue::Fn(_)
+        | DynValue::Signal(_)
+        | DynValue::Piece(_) => serde_json::Value::Null,
         DynValue::Bool(b) => serde_json::Value::Bool(*b),
         DynValue::Num(n) => serde_json::Number::from_f64(*n)
             .map(serde_json::Value::Number)
@@ -772,7 +774,7 @@ fn install_api(ctx: &Ctx<'_>, bridges: &[Bridge]) -> rquickjs::Result<()> {
     g.set("__day_app", Function::new(ctx.clone(), day_app)?)?;
     g.set("__day_nav", Function::new(ctx.clone(), day_nav)?)?;
 
-    // Storage: sqlite + sandboxed fs (docs/lite.md §7) — sync, app-scoped.
+    // Storage: sqlite + sandboxed fs (docs/lite.md §7): sync, app-scoped.
     g.set("__day_db", Function::new(ctx.clone(), day_db)?)?;
     g.set("__day_fs", Function::new(ctx.clone(), day_fs)?)?;
 
@@ -818,7 +820,7 @@ fn install_api(ctx: &Ctx<'_>, bridges: &[Bridge]) -> rquickjs::Result<()> {
     // Fluent localization over the package's i18n/<locale>.ftl files (docs/lite.md §7).
     g.set("__day_t", Function::new(ctx.clone(), day_t)?)?;
 
-    // The ergonomic layer, BEFORE bridges: their installers attach under `day.`.
+    // The ergonomic layer, before bridges: their installers attach under `day.`.
     ctx.eval::<(), _>(BOOTSTRAP)?;
 
     // Host bridges (net, sensors, custom): each installs behind its permission gate.

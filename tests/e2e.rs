@@ -3,7 +3,7 @@
 
 //! End-to-end: a TypeScript miniapp booted through the real pipeline (store install →
 //! QuickJS → TS strip → bootstrap API → page registration) and exercised via the
-//! `day lite test` runner core — pieces, signals, sqlite, sandboxed fs, permission gating.
+//! `day lite test` runner core: pieces, signals, sqlite, sandboxed fs, permission gating.
 
 use std::path::Path;
 

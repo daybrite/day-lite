@@ -97,7 +97,7 @@ fn check(dir: &std::path::Path) -> Result<(), String> {
 ## Compatibility and development
 
 This crate requires Rust 1.96 or newer, the version its oxc dependencies require, and declares
-compatibility with Day 0.4 in [Cargo.toml](Cargo.toml). It is consumed from Git, not crates.io.
+compatibility with Day 0.5 in [Cargo.toml](Cargo.toml). It is consumed from Git, not crates.io.
 Its Day dependencies use `https://github.com/daybrite/day.git` without a branch, tag, or revision.
 Use the same source in your app and keep its `Cargo.lock` to record the resolved revisions. Mixing
 Day source URLs or refs can introduce duplicate framework crates and incompatible types.

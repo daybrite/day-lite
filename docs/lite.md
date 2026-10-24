@@ -246,8 +246,8 @@ scripts. Position *n* runs exactly once, tracked in sqlite's `user_version` prag
 launch the app calls `migrate` with its full history and day-lite applies the tail. Editing
 history instead of appending is an error (a recorded hash per step catches it). The engine is
 day-persistence's driver (day's [docs/persistence.md](https://github.com/daybrite/day/blob/main/docs/persistence.md)), so a superapp carrying both
-crates compiles one SQLite and its engine features (`sqlite-system`, `sqlite-cipher`) govern
-miniapp storage too.
+crates compiles one SQLite, and the engine features it picks on day-persistence (`system`,
+`cipher`) govern miniapp storage too.
 
 ## 8. Install, update, catalog
 

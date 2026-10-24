@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: MPL-2.0
 
 //! Mount a miniapp's UI under the mock toolkit: the page builder crosses JS → dyn registry
-//! → real pieces, and the probe asserts the tree actually materialized (the layer
-//! `day lite test` deliberately doesn't exercise).
+//! → real pieces, and the probe asserts the tree materialized (the layer
+//! `day lite test` doesn't exercise).
 
 use std::cell::RefCell;
 use std::path::Path;
 
 use day_lite::{Host, LiteApp, Store};
 use day_mock::MockToolkit;
-use day_spec::{Size, WindowOptions};
+use day_spec::WindowOptions;
 
 thread_local! {
     static APP: RefCell<Option<LiteApp>> = const { RefCell::new(None) };
@@ -50,15 +50,15 @@ App({});
 page("home", () =>
   column(
     label("Items").font("title"),
-    text_field(draft).placeholder("Add").id("ui-draft"),
+    text_field(draft).placeholder("Add"),
     each(items, (it: { id: number; title: string }) =>
-      label(it.title).id("ui-item-" + it.id),
+      label(it.title),
     ),
     when(
       () => { rev.get(); return items().length > 0; },
-      () => label("has items").id("ui-nonempty"),
+      () => label("has items"),
     ),
-  ).spacing(8).padding(10).id("ui-root"),
+  ).spacing(8).padding(10),
 );
 "#,
     );
@@ -81,11 +81,7 @@ page("home", () =>
     let (mock, probe) = MockToolkit::new();
     day_core::launch_with(
         mock,
-        WindowOptions {
-            title: "t".into(),
-            size: Size::new(400.0, 600.0),
-            ..Default::default()
-        },
+        WindowOptions::default().title("t").size(400.0, 600.0),
         || APP.with(|a| a.borrow().as_ref().expect("running").surface()),
     );
     day_reactive::flush_sync();
@@ -112,8 +108,8 @@ page("home", () =>
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// The device-observed sequence: app A's page builder THROWS (modifier misorder), the app
-/// closes, then app B boots — B's page must still mount cleanly.
+/// The device-observed sequence: app A's page builder throws (modifier misorder), the app
+/// closes, then app B boots; B's page must still mount cleanly.
 #[test]
 fn second_app_mounts_after_first_apps_builder_threw() {
     let dir = std::env::temp_dir().join(format!("day-lite-mockui2-{}", std::process::id()));
@@ -126,7 +122,7 @@ fn second_app_mounts_after_first_apps_builder_threw() {
         r#"{ "app_id": "org.example.bad", "name": "Bad", "version": { "code": 1, "name": "1" },
              "pages": ["home"], "day": { "files": ["app.ts"] } }"#,
     );
-    // `.align` after `.padding` — the LateTyped error, thrown during the page build.
+    // `.align` after `.padding`: the LateTyped error, thrown during the page build.
     write(
         &bad,
         "app.ts",
@@ -142,7 +138,7 @@ fn second_app_mounts_after_first_apps_builder_threw() {
     write(
         &good,
         "app.ts",
-        r#"App({}); page("home", () => column(label("good page")).spacing(4).id("good-root"));"#,
+        r#"App({}); page("home", () => column(label("good page")).spacing(4));"#,
     );
 
     let store = Store::at(dir.join("store"));
@@ -162,11 +158,7 @@ fn second_app_mounts_after_first_apps_builder_threw() {
     let (mock, probe) = MockToolkit::new();
     day_core::launch_with(
         mock,
-        WindowOptions {
-            title: "t".into(),
-            size: Size::new(400.0, 600.0),
-            ..Default::default()
-        },
+        WindowOptions::default().title("t").size(400.0, 600.0),
         || APP.with(|a| a.borrow().as_ref().expect("running").surface()),
     );
     day_reactive::flush_sync();
@@ -181,18 +173,14 @@ fn second_app_mounts_after_first_apps_builder_threw() {
     );
     APP.with(|a| a.borrow_mut().take()); // close app A
 
-    // App B: boot and mount — must be unaffected by A's failure.
+    // App B: boot and mount, which must be unaffected by A's failure.
     let app = host.launch("org.example.good").expect("launch good");
     APP.with(|a| *a.borrow_mut() = Some(app));
     day_core::uninstall_tree();
     let (mock, probe) = MockToolkit::new();
     day_core::launch_with(
         mock,
-        WindowOptions {
-            title: "t".into(),
-            size: Size::new(400.0, 600.0),
-            ..Default::default()
-        },
+        WindowOptions::default().title("t").size(400.0, 600.0),
         || APP.with(|a| a.borrow().as_ref().expect("running").surface()),
     );
     day_reactive::flush_sync();

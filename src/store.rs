@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 //! The package store (docs/lite.md §8): manifests, install/update plans, permission grants,
-//! and the on-disk cache. An origin is either `https://…` (any static host — a raw git
+//! and the on-disk cache. An origin is either `https://…` (any static host; a raw git
 //! branch URL works) or a local directory path (the dev loop: files re-read every launch,
 //! nothing cached).
 //!
@@ -97,7 +97,7 @@ impl Manifest {
         let m: Manifest =
             serde_json::from_slice(bytes).map_err(|e| StoreError::Manifest(e.to_string()))?;
         // The app id names the install directory and the files it lists are written under it,
-        // and both come from a fetched (untrusted) manifest — reject anything path-shaped
+        // and both come from a fetched (untrusted) manifest, so reject anything path-shaped
         // before either reaches a filesystem join. Reverse-DNS grammar: dot-separated
         // segments of alphanumerics, `-`, `_`; no empty segments (which also bans "", ".",
         // and "..").
@@ -171,9 +171,9 @@ impl Origin {
             Ok(Origin::Https(s.to_string()))
         // `starts_with('/')` alone is a POSIX-only test for "absolute": a Windows origin is
         // `C:\…` (or a UNC `\\server\share`), which begins with neither `/` nor `file://` and so
-        // was reported as BadOrigin — the dev loop's local-directory origin could not be used on
-        // Windows at all. `Path::is_absolute` is the platform-aware form; the `/` test stays
-        // because on Windows a leading-slash path is rooted but NOT absolute, and dropping it
+        // was reported as BadOrigin, so the dev loop's local-directory origin could not be used
+        // on Windows at all. `Path::is_absolute` is the platform-aware form; the `/` test stays
+        // because on Windows a leading-slash path is rooted but not absolute, and dropping it
         // would stop accepting an origin this has always taken.
         } else if s.starts_with('/') || s.starts_with("file://") || Path::new(s).is_absolute() {
             let p = s.strip_prefix("file://").unwrap_or(s);
@@ -241,7 +241,7 @@ pub struct UpdatePlan {
     pub app_id: String,
     pub from_code: u64,
     pub manifest: Manifest,
-    /// Permissions in the new manifest that the current grant set does not cover — the UI
+    /// Permissions in the new manifest that the current grant set does not cover; the UI
     /// must re-disclose when non-empty.
     pub new_permissions: Vec<Permission>,
     origin: Origin,
@@ -280,7 +280,7 @@ impl Store {
         // App ids are reverse-domain, and `Manifest::parse` rejects path-shaped ids before
         // they reach here; keep the join safe regardless (`remove` feeds this to
         // `remove_dir_all`). Mapping separators to `_` handles most of it, but a name of
-        // only dots ("..") would survive the map and escape the root — send those to a
+        // only dots ("..") would survive the map and escape the root, so send those to a
         // sentinel instead.
         let safe: String = app_id
             .chars()
@@ -431,7 +431,7 @@ impl Store {
             let h = hash(&bytes);
             let unchanged = old_hashes.is_some_and(|m| m.get(rel) == Some(&h));
             if !unchanged {
-                // `rel` comes from the manifest's file list — untrusted. A listing like
+                // `rel` comes from the manifest's file list and is untrusted. A listing like
                 // `../../x` must fail the install, not write outside the package dir.
                 let dest = safe_rel(&pkg, rel)?;
                 if let Some(parent) = dest.parent() {

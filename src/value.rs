@@ -1,11 +1,11 @@
 // Copyright © The Daybrite Project
 // SPDX-License-Identifier: MPL-2.0
 
-//! DynValue ⇄ JS conversion (docs/lite.md §5): typed object graphs across the boundary —
+//! DynValue ⇄ JS conversion (docs/lite.md §5): typed object graphs across the boundary,
 //! never stringified eval. Pieces and signals cross as integer handles carried by small
 //! marker objects the bootstrap script wraps in classes (`__p` / `__s` keys); JS functions
 //! cross as [`DynCallback`]s holding a `Persistent<Function>` plus the context, so Rust can
-//! re-invoke them later (actions, reactive closures) from OUTSIDE any `Context::with`.
+//! re-invoke them later (actions, reactive closures) from outside any `Context::with`.
 
 use std::rc::Rc;
 
@@ -99,9 +99,11 @@ pub fn to_js<'js>(ctx: &Ctx<'js>, v: &DynValue) -> rquickjs::Result<Value<'js>> 
             }
             obj.into_value()
         }
-        // Handles/functions coming back out are rare (bridge results are data); represent
+        // Declared element identities and handles are not transferable JS data; represent
         // them as null rather than materializing new wrappers.
-        DynValue::Fn(_) | DynValue::Signal(_) | DynValue::Piece(_) => Value::new_null(ctx.clone()),
+        DynValue::ElementId(_) | DynValue::Fn(_) | DynValue::Signal(_) | DynValue::Piece(_) => {
+            Value::new_null(ctx.clone())
+        }
     })
 }
 
@@ -140,8 +142,8 @@ pub fn js_callback(context: Context, saved: Persistent<Function<'static>>) -> Dy
 }
 
 /// Surface a JS exception in the host log (visible in `day launch` output) and to the
-/// miniapp's `App.onError` when registered. The thrown value may be an Error object OR a
-/// plain value (the host's own `throw()` throws strings) — stringify whichever arrived.
+/// miniapp's `App.onError` when registered. The thrown value may be an Error object or a
+/// plain value (the host's own `throw()` throws strings), so stringify whichever arrived.
 pub fn report_js_error(ctx: &Ctx<'_>, what: &str, e: rquickjs::Error) {
     let detail = if e.is_exception() {
         let caught = ctx.catch();

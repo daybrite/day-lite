@@ -4,8 +4,8 @@
 //! day-lite: dynamic JS/TS miniapps on day (docs/lite.md).
 //!
 //! A **superapp** (a compiled day app) embeds a [`Host`], which owns the package [`Store`]
-//! and the set of [`Bridge`]s — native capabilities exposed to scripts, each behind a
-//! permission id. [`Host::launch`] boots a miniapp's QuickJS runtime and returns its UI as
+//! and the set of [`Bridge`]s (native capabilities exposed to scripts, each behind a
+//! permission id). [`Host::launch`] boots a miniapp's QuickJS runtime and returns its UI as
 //! a plain `AnyPiece`. See docs/lite.md for the whole model.
 
 mod bridges;

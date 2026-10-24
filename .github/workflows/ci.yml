@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
   schedule:
     # Daily: day's main moves on weeks nobody pushes here.
-    - cron: "0 5 * * *"
+    - cron: "0 2 * * *"
 
 permissions:
   contents: read
