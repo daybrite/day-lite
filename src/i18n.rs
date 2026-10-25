@@ -5,7 +5,7 @@
 //! `i18n/<locale>.ftl` files; `day.i18n.t(key, args?)` formats through a per-app
 //! `FluentBundle`. Locale resolution: `DAY_LOCALE` env (what `day launch --locale` and the
 //! test runner deliver), else day's live locale signal, with a `<lang>` then `en` fallback
-//! chain. Bidi isolates are stripped from output the same way day-l10n does for its own
+//! chain. Bidi isolates are stripped from output the same way day-localization does for its own
 //! catalogs, so scripted `assert_text` matches what authors wrote.
 
 use std::cell::RefCell;
@@ -39,7 +39,7 @@ fn current_locale() -> String {
     {
         return l;
     }
-    day_l10n::locale().get()
+    day_localization::locale().get()
 }
 
 /// The candidate file stems for a locale, most specific first: `zh-CN` → ["zh-CN", "zh",
@@ -105,7 +105,7 @@ impl I18n {
             {
                 let mut errs = Vec::new();
                 let out = bundle.format_pattern(pattern, Some(&fargs), &mut errs);
-                return day_l10n::strip_isolates(&out);
+                return day_localization::strip_isolates(&out);
             }
         }
         key.to_string()

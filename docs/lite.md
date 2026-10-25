@@ -25,7 +25,7 @@ out of that repository into its own in 2026-09. Everything the superapp did went
 public embedding API: a superapp ships its own piece/part/tweak sets and its own permission policy
 (§10), and none of that needs to live in this crate.
 
-Initial platform support is the three mobile targets (ios-uikit, android-mdc, harmony-arkui);
+Initial platform support is the three mobile targets (ios-uikit, android-material, harmony-arkui);
 the design has no mobile-specific dependencies, so desktop toolkits can follow later.
 
 ## 1. Architecture
@@ -221,7 +221,7 @@ returns throughout; errors are typed (`PermissionError`, `NetError`, `DbError`, 
   `size`. Paths are confined to the app's sandbox dir; `..`, absolute paths, and escapes
   reject with `SecurityError`.
 - **`day.sensors`** — bridged to `day-part-sensors` where compiled in; gated by `SENSORS`.
-- **`day.prefs`** — small KV (`get/set/remove`), bridged to `day-part-prefs`, app-scoped.
+- **`day.prefs`** — small KV (`get/set/remove`), bridged to `day-part-preferences`, app-scoped.
 - **`day.sys.info()`** → `{platform, appId, version, locale, host}`.
 - **`day.i18n.t(key, args?)`** (global shorthand `t(...)`) — Fluent localization (§7.2).
 - **Timers/console**: `setTimeout/setInterval/clearTimeout/clearInterval` (Platform::post
@@ -235,7 +235,7 @@ formats through a per-app `FluentBundle` for the run's locale: `day launch --loc
 `day lite test` deliver it via `DAY_LOCALE`, else day's live locale signal applies, so a
 `set_locale` in the host re-renders miniapp text reactively. Resolution falls back
 `zh-CN → zh → en`, and a missing key returns the key itself (an unlocalized app keeps
-working, visibly). Bidi isolates are stripped from output exactly as day-l10n does for
+working, visibly). Bidi isolates are stripped from output exactly as day-localization does for
 compiled apps, so scripted `assert_text` matches the authored string. The bundled samples
 each carry `en`, `fr`, `ar`, and `zh-CN` catalogs.
 

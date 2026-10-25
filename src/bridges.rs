@@ -156,7 +156,7 @@ fn install_net(ctx: &Ctx<'_>, granted: bool) -> rquickjs::Result<()> {
     Ok(())
 }
 
-/// `day.prefs` over day-part-prefs, app-scoped by key prefix (docs/lite.md §7).
+/// `day.prefs` over day-part-preferences, app-scoped by key prefix (docs/lite.md §7).
 pub fn prefs() -> Bridge {
     Bridge {
         namespace: "prefs",
@@ -186,15 +186,15 @@ fn install_prefs(ctx: &Ctx<'_>, granted: bool) -> rquickjs::Result<()> {
                 }
                 let k = scoped(&key);
                 let out = match op.as_str() {
-                    "get" => day_part_prefs::get(&k)
+                    "get" => day_part_preferences::get(&k)
                         .map(DynValue::Str)
                         .unwrap_or(DynValue::Null),
                     "set" => {
-                        day_part_prefs::set(&k, &value);
+                        day_part_preferences::set(&k, &value);
                         DynValue::Null
                     }
                     "remove" => {
-                        day_part_prefs::remove(&k);
+                        day_part_preferences::remove(&k);
                         DynValue::Null
                     }
                     _ => return Err(throw(&ctx, "unknown prefs op")),
