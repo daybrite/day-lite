@@ -18,7 +18,7 @@ granted at install.
 
 ```toml
 [dependencies]
-day-lite = { git = "https://github.com/daybrite/day-lite.git" }
+day-lite = "0.4"
 ```
 
 ```rust

@@ -8,9 +8,6 @@ rust-version = "1.96"
 description = "JavaScript and TypeScript miniapps on Day's native pieces, embedded in a host app"
 repository = "https://github.com/daybrite/day-lite"
 license = "MPL-2.0"
-# The day framework crates are not on crates.io yet; neither is this one. Apps depend on it
-# from git, exactly as they depend on day.
-publish = false
 
 # Every day dependency names the bare canonical URL: no branch, tag, or rev. Cargo unifies a git
 # dependency only when URL and ref match, so an app on `git = "…/day.git"` and a crate pinned to
@@ -31,12 +28,12 @@ compat = "0.6"
 
 [dependencies]
 log = "0.4"
-day-reactive = { git = "https://github.com/daybrite/day.git" }
-day-core = { git = "https://github.com/daybrite/day.git" }
-day-spec = { git = "https://github.com/daybrite/day.git" }
-day-pieces = { git = "https://github.com/daybrite/day.git", features = ["dyn-registry"] }
-day-part-http = { git = "https://github.com/daybrite/day.git" }
-day-part-preferences = { git = "https://github.com/daybrite/day.git" }
+day-reactive = "0.6"
+day-core = "0.6"
+day-spec = "0.6"
+day-pieces = { version = "0.6", features = ["dyn-registry"] }
+day-part-http = "0.6"
+day-part-preferences = "0.6"
 
 # The JS engine: QuickJS. `bindgen` because rquickjs ships no prebuilt bindings for the
 # mobile cross-targets (docs/lite.md §13); the day CLI supplies the sysroot/ar env the
@@ -56,14 +53,14 @@ oxc_span = "0.150"
 # day-persistence (`system`, `cipher`) govern miniapp storage too. The `bundled` default keeps
 # the engine every mobile target cross-compiles; a system-engine build turns it off
 # (default-features = false).
-day-persistence = { git = "https://github.com/daybrite/day-persistence.git", default-features = false, features = ["driver-rusqlite"] }
+day-persistence = { version = "0.1", default-features = false, features = ["driver-rusqlite"] }
 
 # Per-miniapp Fluent bundles (docs/lite.md §7), the same crate/version day-localization builds on.
 fluent-bundle = "0.16"
-day-localization = { git = "https://github.com/daybrite/day.git" }
+day-localization = "0.6"
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 [dev-dependencies]
-day-mock = { git = "https://github.com/daybrite/day.git" }
+day-mock = "0.6"

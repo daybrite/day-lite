@@ -4,15 +4,23 @@ name: ci
 # main? These are the checks day's own CI ran on it before the crate moved here: clippy on Linux,
 # and the host test run on all three operating systems.
 #
-# No Cargo.lock is committed: this crate tracks an unpublished framework by its bare git URL, so
-# every run resolves day afresh at the tip of main and proves the crate against it. A red run
-# after a day push is the signal, and there is no pinned lock for a local `day patch` table to
-# rewrite and commit by accident.
+# No Cargo.lock is committed: every run resolves day afresh. A push builds against the
+# head of day's main (and of every other Day repository it uses), and the nightly run against
+# the newest releases on crates.io (daybrite/actions' day-deps). A red push run after a day push
+# is the signal, not a nuisance; a red nightly run means this crate needs a day that is not
+# released yet. There is no pinned lock for a local `day patch` table to rewrite and commit by
+# accident.
 on:
   push:
     branches: ["**"]
+    tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      day-main:
+        description: Build against day's main branch instead of the newest release
+        type: boolean
+        default: false
   schedule:
     # Daily: day's main moves on weeks nobody pushes here.
     - cron: "0 2 * * *"
@@ -21,6 +29,14 @@ permissions:
   contents: read
 
 jobs:
+  # Retired Day crate names and Rust imports (daybrite/actions check-crate-names).
+  crate-names:
+    name: crate names
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: daybrite/actions/.github/actions/check-crate-names@main
+
   # One row per operating system, because each compiles the C underneath with a different
   # toolchain: rquickjs builds QuickJS and runs bindgen over its headers, and day-persistence
   # builds the bundled SQLite. That is gcc on Linux, Apple clang on macOS, and MSVC on Windows.
@@ -35,7 +51,28 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      # Day from crates.io, or from main on a push (daybrite/actions day-deps).
+      - uses: daybrite/actions/.github/actions/day-deps@v1
+        with:
+          day-deps: ${{ inputs.day-main && 'main' || 'auto' }}
       - run: cargo fmt --all -- --check
         if: runner.os == 'Linux'
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
+
+  # On a version tag, once the checks above passed: the crate to crates.io through Trusted
+  # Publishing (daybrite/actions' publish-crates). Its trusted publisher on crates.io names this
+  # repository, ci.yml, and the environment `release`.
+  publish:
+    name: publish (crates.io)
+    needs: [host]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: daybrite/actions/.github/actions/publish-crates@v1
