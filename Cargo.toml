@@ -9,11 +9,8 @@ description = "JavaScript and TypeScript miniapps on Day's native pieces, embedd
 repository = "https://github.com/daybrite/day-lite"
 license = "MPL-2.0"
 
-# Every day dependency names the bare canonical URL: no branch, tag, or rev. Cargo unifies a git
-# dependency only when URL and ref match, so an app on `git = "…/day.git"` and a crate pinned to
-# a tag would carry two copies of every day crate; leaving the ref off lets the app's Cargo.lock
-# choose one revision for the whole graph. No lock is committed here (see .gitignore), and
-# `compat` below says which day minor this release is built and tested against.
+# Daybrite-owned dependencies accept every stable 0.x release. Apps retain a tested
+# dependency set with Cargo.lock; updating it may require source changes.
 
 [features]
 # The bundled SQLite, on by default: the engine every mobile target cross-compiles. A
@@ -23,17 +20,17 @@ default = ["bundled"]
 bundled = ["day-persistence/bundled"]
 
 [package.metadata.day]
-# The day minor this release is built and tested against. `day build` notes a mismatch.
-compat = "0.6"
+# Accept the pre-1.0 series; source compatibility between releases is not guaranteed.
+compat = "0.*"
 
 [dependencies]
 log = "0.4"
-day-reactive = "0.6"
-day-core = "0.6"
-day-spec = "0.6"
-day-pieces = { version = "0.6", features = ["dyn-registry"] }
-day-part-http = "0.6"
-day-part-preferences = "0.6"
+day-reactive = "0.*"
+day-core = "0.*"
+day-spec = "0.*"
+day-pieces = { version = "0.*", features = ["dyn-registry"] }
+day-part-http = "0.*"
+day-part-preferences = "0.*"
 
 # The JS engine: QuickJS. `bindgen` because rquickjs ships no prebuilt bindings for the
 # mobile cross-targets (docs/lite.md §13); the day CLI supplies the sysroot/ar env the
@@ -53,14 +50,14 @@ oxc_span = "0.150"
 # day-persistence (`system`, `cipher`) govern miniapp storage too. The `bundled` default keeps
 # the engine every mobile target cross-compiles; a system-engine build turns it off
 # (default-features = false).
-day-persistence = { version = "0.1", default-features = false, features = ["driver-rusqlite"] }
+day-persistence = { version = "0.*", default-features = false, features = ["driver-rusqlite"] }
 
 # Per-miniapp Fluent bundles (docs/lite.md §7), the same crate/version day-localization builds on.
 fluent-bundle = "0.16"
-day-localization = "0.6"
+day-localization = "0.*"
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 [dev-dependencies]
-day-mock = "0.6"
+day-mock = "0.*"

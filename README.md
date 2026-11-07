@@ -18,7 +18,7 @@ granted at install.
 
 ```toml
 [dependencies]
-day-lite = "0.4"
+day-lite = "0.*"
 ```
 
 ```rust
