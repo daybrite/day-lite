@@ -23,7 +23,8 @@ on:
         default: false
   schedule:
     # Daily: day's main moves on weeks nobody pushes here.
-    - cron: "0 2 * * *"
+    - cron: "0 23 * * *" # 23:00 Eastern; staggered across daybrite.
+      timezone: America/New_York
 
 permissions:
   contents: read
