@@ -1,7 +1,7 @@
 // Copyright © The Daybrite Project
 // SPDX-License-Identifier: MPL-2.0
 
-//! The miniapp runtime (docs/lite.md §1, §5–§7): one QuickJS context on the main thread,
+//! The miniapp runtime (docs/lite.md §1, §5–§7): one `QuickJS` context on the main thread,
 //! the `day.*` API installed over the dyn registry, and the module loader that strips
 //! TypeScript on the way in. Everything here is single-threaded; async work (net, timers)
 //! goes through `day_core::task` and re-enters the context from the main thread.
@@ -171,6 +171,10 @@ impl Resolver for PkgResolver {
 struct PkgLoader;
 
 impl Loader for PkgLoader {
+    #[expect(
+        clippy::case_sensitive_file_extension_comparisons,
+        reason = "module names are matched exactly as the manifest and the importing module spell them"
+    )]
     fn load<'js>(
         &mut self,
         ctx: &Ctx<'js>,
@@ -197,7 +201,7 @@ impl Loader for PkgLoader {
 
 // ---- the running app --------------------------------------------------------------------
 
-/// A running miniapp: the QuickJS runtime plus its UI surface.
+/// A running miniapp: the `QuickJS` runtime plus its UI surface.
 pub struct LiteApp {
     services: Rc<Services>,
     // Kept alive for the app's lifetime; dropped (in order) at teardown.
@@ -208,6 +212,10 @@ pub struct LiteApp {
 impl LiteApp {
     /// Boot `app_id` from the store: build the runtime, install the API + bridges, and
     /// evaluate the entry module (which registers `App` and its pages).
+    ///
+    /// # Errors
+    /// Returns a message when the app is not installed, its database cannot be opened, or its entry
+    /// module fails to load or run.
     pub fn boot(
         store: Store,
         app_id: &str,
@@ -298,6 +306,9 @@ impl LiteApp {
     /// Evaluate test modules and run their collected `test()` registrations (docs/lite.md
     /// §11). Returns `(module, test name, failure detail)` per test; `None` = passed.
     /// Used by the `day lite test` runner, not by superapps.
+    ///
+    /// # Errors
+    /// Returns a message when a test module fails to load or evaluate.
     pub fn run_test_modules(
         &self,
         modules: &[String],
@@ -356,6 +367,10 @@ impl LiteApp {
     }
 }
 
+#[expect(
+    clippy::case_sensitive_file_extension_comparisons,
+    reason = "module names are matched exactly as the manifest and the importing module spell them"
+)]
 fn load_module_source(module: &str) -> Result<String, String> {
     let s = services();
     let bytes = s
@@ -385,6 +400,10 @@ fn teardown() {
     SIGNALS.with(|s| s.borrow_mut().clear());
 }
 
+#[expect(
+    clippy::case_sensitive_file_extension_comparisons,
+    reason = "module names are matched exactly as the manifest and the importing module spell them"
+)]
 fn load_entry(entry: &str) -> Result<String, String> {
     let s = services();
     let bytes = s
@@ -456,8 +475,7 @@ pub fn dyn_to_json(v: &DynValue) -> serde_json::Value {
         | DynValue::Piece(_) => serde_json::Value::Null,
         DynValue::Bool(b) => serde_json::Value::Bool(*b),
         DynValue::Num(n) => serde_json::Number::from_f64(*n)
-            .map(serde_json::Value::Number)
-            .unwrap_or(serde_json::Value::Null),
+            .map_or(serde_json::Value::Null, serde_json::Value::Number),
         DynValue::Str(s) => serde_json::Value::String(s.clone()),
         DynValue::List(items) => serde_json::Value::Array(items.iter().map(dyn_to_json).collect()),
         DynValue::Map(entries) => serde_json::Value::Object(
@@ -475,6 +493,10 @@ pub fn dyn_to_json(v: &DynValue) -> serde_json::Value {
 /// (docs/lite.md §5–§7). Kept as plain JS so it needs no stripping.
 const BOOTSTRAP: &str = include_str!("bootstrap.js");
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "a host function receives its arguments by value from the JS binding"
+)]
 fn day_construct<'js>(ctx: Ctx<'js>, name: String, args: Vec<Value<'js>>) -> rquickjs::Result<u32> {
     let dargs: Vec<DynValue> = args.iter().map(|v| from_js(&ctx, v, 16)).collect();
     let piece = dynreg::construct(&name, &dargs).map_err(|e| throw(&ctx, &e.to_string()))?;
@@ -484,6 +506,10 @@ fn day_construct<'js>(ctx: Ctx<'js>, name: String, args: Vec<Value<'js>>) -> rqu
     }))
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "a host function receives its arguments by value from the JS binding"
+)]
 fn day_modify<'js>(
     ctx: Ctx<'js>,
     h: u32,
@@ -499,6 +525,10 @@ fn day_modify<'js>(
         .map_err(|e| throw(&ctx, &e.to_string()))
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "a host function receives its arguments by value from the JS binding"
+)]
 fn day_signal<'js>(ctx: Ctx<'js>, init: Value<'js>) -> rquickjs::Result<u32> {
     let sig = match from_js(&ctx, &init, 4) {
         DynValue::Bool(b) => DynSignal::Bool(Signal::new(b)),
@@ -512,6 +542,10 @@ fn day_signal<'js>(ctx: Ctx<'js>, init: Value<'js>) -> rquickjs::Result<u32> {
     }))
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "a host function receives its arguments by value from the JS binding"
+)]
 fn day_sig_get(ctx: Ctx<'_>, h: u32) -> rquickjs::Result<String> {
     let sig = SIGNALS
         .with(|s| s.borrow().get(h as usize).cloned())
@@ -519,6 +553,10 @@ fn day_sig_get(ctx: Ctx<'_>, h: u32) -> rquickjs::Result<String> {
     Ok(dyn_to_json(&sig.get()).to_string())
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "a host function receives its arguments by value from the JS binding"
+)]
 fn day_sig_set<'js>(ctx: Ctx<'js>, h: u32, v: Value<'js>) -> rquickjs::Result<()> {
     let sig = SIGNALS
         .with(|s| s.borrow().get(h as usize).cloned())
@@ -527,6 +565,10 @@ fn day_sig_set<'js>(ctx: Ctx<'js>, h: u32, v: Value<'js>) -> rquickjs::Result<()
     sig.set(&dv).map_err(|e| throw(&ctx, &e.to_string()))
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "a host function receives its arguments by value from the JS binding"
+)]
 fn day_page<'js>(
     ctx: Ctx<'js>,
     route: String,
@@ -557,6 +599,11 @@ fn day_page<'js>(
     Ok(())
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    clippy::unnecessary_wraps,
+    reason = "a host function has the by-value arguments and the `Result` return of the JS binding"
+)]
 fn day_app<'js>(ctx: Ctx<'js>, obj: Value<'js>) -> rquickjs::Result<()> {
     if let DynValue::Map(entries) = from_js(&ctx, &obj, 4) {
         let s = services();
@@ -569,6 +616,10 @@ fn day_app<'js>(ctx: Ctx<'js>, obj: Value<'js>) -> rquickjs::Result<()> {
     Ok(())
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "a host function receives its arguments by value from the JS binding"
+)]
 fn day_nav<'js>(
     ctx: Ctx<'js>,
     op: String,
@@ -595,6 +646,10 @@ fn day_nav<'js>(
     Ok(())
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "a host function receives its arguments by value from the JS binding"
+)]
 fn day_db<'js>(
     ctx: Ctx<'js>,
     op: String,
@@ -660,6 +715,10 @@ fn day_db<'js>(
     Ok(dyn_to_json(&out).to_string())
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "a host function receives its arguments by value from the JS binding"
+)]
 fn day_fs<'js>(
     ctx: Ctx<'js>,
     op: String,
@@ -677,9 +736,9 @@ fn day_fs<'js>(
                 .as_string()
                 .and_then(|v| v.to_string().ok())
                 .unwrap_or_default();
-            fs.write(&path, data.as_bytes()).map(|_| DynValue::Null)
+            fs.write(&path, data.as_bytes()).map(|()| DynValue::Null)
         }
-        "mkdir" => fs.mkdir(&path).map(|_| DynValue::Null),
+        "mkdir" => fs.mkdir(&path).map(|()| DynValue::Null),
         "size" => fs.size(&path).map(|n| DynValue::Num(n as f64)),
         "entries" => fs.entries(&path).map(|items| {
             DynValue::List(
@@ -705,7 +764,7 @@ fn day_fs<'js>(
         }),
         "remove" => {
             let recursive = arg.as_bool().unwrap_or(false);
-            fs.remove(&path, recursive).map(|_| DynValue::Null)
+            fs.remove(&path, recursive).map(|()| DynValue::Null)
         }
         "exists" => fs.exists(&path).map(|k| match k {
             None => DynValue::Null,
@@ -720,6 +779,11 @@ fn day_fs<'js>(
     }
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    clippy::unnecessary_wraps,
+    reason = "a host function has the by-value arguments and the `Result` return of the JS binding"
+)]
 fn day_t<'js>(ctx: Ctx<'js>, key: String, args: Value<'js>) -> rquickjs::Result<String> {
     let s = services();
     let mut fargs: Vec<(String, String)> = Vec::new();
@@ -731,6 +795,10 @@ fn day_t<'js>(ctx: Ctx<'js>, key: String, args: Value<'js>) -> rquickjs::Result<
     Ok(s.i18n.t(&s.store, &s.app_id, &key, &fargs))
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "a host function receives its arguments by value from the JS binding"
+)]
 fn day_timeout<'js>(ctx: Ctx<'js>, f: Value<'js>, ms: f64) -> rquickjs::Result<()> {
     let DynValue::Fn(cb) = from_js(&ctx, &f, 2) else {
         return Err(throw(&ctx, "setTimeout(fn, ms)"));
@@ -848,8 +916,7 @@ fn db_params<'js>(ctx: &Ctx<'js>, v: &Value<'js>) -> Vec<DbCell> {
         DynValue::List(items) => items
             .iter()
             .map(|v| match v {
-                DynValue::Null => DbCell::Null,
-                DynValue::Bool(b) => DbCell::Int(*b as i64),
+                DynValue::Bool(b) => DbCell::Int(i64::from(*b)),
                 DynValue::Num(n) if n.fract() == 0.0 && n.abs() < 9e15 => DbCell::Int(*n as i64),
                 DynValue::Num(n) => DbCell::Real(*n),
                 DynValue::Str(s) => DbCell::Text(s.clone()),
@@ -862,11 +929,10 @@ fn db_params<'js>(ctx: &Ctx<'js>, v: &Value<'js>) -> Vec<DbCell> {
 
 /// Throw a JS exception carrying `msg`; the returned error propagates it.
 pub fn throw(ctx: &Ctx<'_>, msg: &str) -> rquickjs::Error {
-    let _ = ctx.throw(
-        rquickjs::String::from_str(ctx.clone(), msg)
-            .map(|s| s.into_value())
-            .unwrap_or_else(|_| Value::new_null(ctx.clone())),
-    );
+    let _ = ctx.throw(rquickjs::String::from_str(ctx.clone(), msg).map_or_else(
+        |_| Value::new_null(ctx.clone()),
+        rquickjs::String::into_value,
+    ));
     rquickjs::Error::Exception
 }
 

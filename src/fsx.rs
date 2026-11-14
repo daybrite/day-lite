@@ -4,7 +4,7 @@
 //! The sandboxed per-app filesystem (docs/lite.md §7): an OPFS-shaped surface rooted at the
 //! app's `fs/` directory. Path validation is defense-in-depth: names may not be absolute,
 //! contain `..`, backslashes, or NULs, and every resolved path must stay under the root.
-//! Errors use OPFS DOMException names (`NotFoundError`, `TypeMismatchError`,
+//! Errors use OPFS `DOMException` names (`NotFoundError`, `TypeMismatchError`,
 //! `InvalidModificationError`, `SecurityError`) so the JS contract is the familiar one.
 
 use std::path::{Component, Path, PathBuf};
@@ -76,6 +76,11 @@ impl Sandbox {
         safe_join(&self.root, rel)
     }
 
+    /// Read a file.
+    ///
+    /// # Errors
+    /// Returns a `SecurityError` when `rel` leaves the sandbox, and otherwise the error of the
+    /// failed file operation.
     pub fn read(&self, rel: &str) -> Result<Vec<u8>, FsError> {
         let p = self.resolve(rel)?;
         if p.is_dir() {
@@ -84,6 +89,11 @@ impl Sandbox {
         std::fs::read(&p).map_err(|_| fail("NotFoundError", rel))
     }
 
+    /// Write `bytes` to a file.
+    ///
+    /// # Errors
+    /// Returns a `SecurityError` when `rel` leaves the sandbox, and otherwise the error of the
+    /// failed file operation.
     pub fn write(&self, rel: &str, bytes: &[u8]) -> Result<(), FsError> {
         let p = self.resolve(rel)?;
         if p.is_dir() {
@@ -96,11 +106,21 @@ impl Sandbox {
         std::fs::write(&p, bytes).map_err(|e| fail("InvalidModificationError", e.to_string()))
     }
 
+    /// Create a directory and its missing parents.
+    ///
+    /// # Errors
+    /// Returns a `SecurityError` when `rel` leaves the sandbox, and otherwise the error of the
+    /// failed file operation.
     pub fn mkdir(&self, rel: &str) -> Result<(), FsError> {
         let p = self.resolve(rel)?;
         std::fs::create_dir_all(&p).map_err(|e| fail("InvalidModificationError", e.to_string()))
     }
 
+    /// A file's size in bytes.
+    ///
+    /// # Errors
+    /// Returns a `SecurityError` when `rel` leaves the sandbox, and otherwise the error of the
+    /// failed file operation. A directory is a `TypeMismatchError`.
     pub fn size(&self, rel: &str) -> Result<u64, FsError> {
         let p = self.resolve(rel)?;
         let md = std::fs::metadata(&p).map_err(|_| fail("NotFoundError", rel))?;
@@ -110,6 +130,11 @@ impl Sandbox {
         Ok(md.len())
     }
 
+    /// A directory's entries, each with its kind.
+    ///
+    /// # Errors
+    /// Returns a `SecurityError` when `rel` leaves the sandbox, and otherwise the error of the
+    /// failed file operation.
     pub fn entries(&self, rel: &str) -> Result<Vec<(String, EntryKind)>, FsError> {
         let p = self.resolve(rel)?;
         if !p.exists() {
@@ -137,6 +162,11 @@ impl Sandbox {
         Ok(out)
     }
 
+    /// Remove a file or a directory, with its contents when `recursive`.
+    ///
+    /// # Errors
+    /// Returns a `SecurityError` when `rel` leaves the sandbox, and otherwise the error of the
+    /// failed file operation.
     pub fn remove(&self, rel: &str, recursive: bool) -> Result<(), FsError> {
         let p = self.resolve(rel)?;
         if !p.exists() {
@@ -154,6 +184,10 @@ impl Sandbox {
         r.map_err(|e| fail("InvalidModificationError", e.to_string()))
     }
 
+    /// What `rel` names, or `None` when nothing is there.
+    ///
+    /// # Errors
+    /// Returns a `SecurityError` when `rel` leaves the sandbox.
     pub fn exists(&self, rel: &str) -> Result<Option<EntryKind>, FsError> {
         let p = self.resolve(rel)?;
         if !p.exists() {

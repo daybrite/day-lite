@@ -20,7 +20,7 @@ pub fn strip(name: &str, source: &str) -> Result<String, String> {
         let first = parsed
             .diagnostics
             .iter()
-            .map(|d| d.to_string())
+            .map(std::string::ToString::to_string)
             .next()
             .unwrap_or_default();
         return Err(format!("{name}: {first}"));
@@ -40,7 +40,7 @@ pub fn strip(name: &str, source: &str) -> Result<String, String> {
         let first = ret
             .diagnostics
             .iter()
-            .map(|d| d.to_string())
+            .map(std::string::ToString::to_string)
             .next()
             .unwrap_or_default();
         return Err(format!("{name}: {first}"));

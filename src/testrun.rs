@@ -64,6 +64,9 @@ globalThis.expect = (actual) => ({
 
 /// Install `dir` (a miniapp working tree) into a throwaway store and run every
 /// `tests/*.test.ts` / `.test.js` module.
+///
+/// # Errors
+/// Returns a message when the tree cannot be installed or booted, or a test module fails to load.
 pub fn run_tests(dir: &Path) -> Result<Vec<TestOutcome>, String> {
     let tests_dir = dir.join("tests");
     let mut modules: Vec<String> = Vec::new();

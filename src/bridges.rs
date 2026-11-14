@@ -42,6 +42,10 @@ fn origin_allowed(url: &str) -> bool {
     .unwrap_or(false)
 }
 
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "a host function receives its arguments by value from the JS binding"
+)]
 fn day_fetch<'js>(
     ctx: Ctx<'js>,
     url: String,
@@ -115,7 +119,7 @@ fn day_fetch<'js>(
                                 );
                                 let out = DynValue::Map(vec![
                                     ("ok".into(), DynValue::Bool(resp.status < 400)),
-                                    ("status".into(), DynValue::Num(resp.status as f64)),
+                                    ("status".into(), DynValue::Num(f64::from(resp.status))),
                                     ("headers".into(), headers),
                                     ("body".into(), DynValue::Str(resp.text().into_owned())),
                                 ]);
@@ -145,13 +149,13 @@ fn install_net(ctx: &Ctx<'_>, granted: bool) -> rquickjs::Result<()> {
         .set("__day_fetch", Function::new(ctx.clone(), day_fetch)?)?;
     // The ergonomic wrapper: response.text()/json() like the web fetch.
     ctx.eval::<(), _>(
-        r#"day.net = { fetch: (url, opts) => new Promise((res, rej) => {
+        r"day.net = { fetch: (url, opts) => new Promise((res, rej) => {
              __day_fetch(url, opts ?? null, (json) => {
                const r = JSON.parse(json);
                res({ ok: r.ok, status: r.status, headers: r.headers,
                      text: () => r.body, json: () => JSON.parse(r.body) });
              }, (e) => rej(new Error(e)));
-           }) };"#,
+           }) };",
     )?;
     Ok(())
 }
@@ -186,9 +190,7 @@ fn install_prefs(ctx: &Ctx<'_>, granted: bool) -> rquickjs::Result<()> {
                 }
                 let k = scoped(&key);
                 let out = match op.as_str() {
-                    "get" => day_part_preferences::get(&k)
-                        .map(DynValue::Str)
-                        .unwrap_or(DynValue::Null),
+                    "get" => day_part_preferences::get(&k).map_or(DynValue::Null, DynValue::Str),
                     "set" => {
                         day_part_preferences::set(&k, &value);
                         DynValue::Null

@@ -68,6 +68,9 @@ pub struct Db(Rc<RefCell<Box<dyn SqliteConnection>>>);
 
 impl Db {
     /// Open (creating parents) the app's database.
+    ///
+    /// # Errors
+    /// Returns the storage error when the directory or the database cannot be created or opened.
     pub fn open(path: PathBuf) -> Result<Db, DbError> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(err)?;
@@ -78,12 +81,18 @@ impl Db {
     }
 
     /// In-memory database (tests).
+    ///
+    /// # Errors
+    /// Returns the storage error when the database cannot be opened.
     pub fn memory() -> Result<Db, DbError> {
         let conn: Box<dyn SqliteConnection> = Box::new(Sqlite::memory().open().map_err(err)?);
         Ok(Db(Rc::new(RefCell::new(conn))))
     }
 
     /// Apply the tail of an append-only migration history (docs/lite.md §7.1).
+    ///
+    /// # Errors
+    /// Returns the storage error of the first step that fails.
     pub fn migrate(&self, steps: &[String]) -> Result<u64, DbError> {
         let mut conn = self.0.borrow_mut();
         conn.execute_batch(
@@ -140,6 +149,10 @@ impl Db {
         Ok(steps.len() as u64)
     }
 
+    /// Run one statement. Answers the number of changed rows and the last inserted row id.
+    ///
+    /// # Errors
+    /// Returns the storage error when the statement fails.
     pub fn exec(&self, sql: &str, params: &[Cell]) -> Result<(u64, i64), DbError> {
         let mut conn = self.0.borrow_mut();
         let vals: Vec<Value> = params.iter().map(Cell::to_value).collect();
@@ -154,6 +167,10 @@ impl Db {
         Ok((changes, rowid))
     }
 
+    /// Run one query. Answers each row as its named cells.
+    ///
+    /// # Errors
+    /// Returns the storage error when the statement fails.
     pub fn query(&self, sql: &str, params: &[Cell]) -> Result<Vec<Vec<(String, Cell)>>, DbError> {
         let mut conn = self.0.borrow_mut();
         let vals: Vec<Value> = params.iter().map(Cell::to_value).collect();
@@ -173,7 +190,7 @@ impl Db {
 fn content_hash(s: &str) -> String {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     for b in s.bytes() {
-        h ^= b as u64;
+        h ^= u64::from(b);
         h = h.wrapping_mul(0x1_0000_01b3);
     }
     format!("{h:016x}")

@@ -93,6 +93,10 @@ impl Manifest {
         self.day.entry.as_deref().unwrap_or("app.ts")
     }
 
+    /// Parse and validate a manifest.
+    ///
+    /// # Errors
+    /// Returns `StoreError::Manifest` when the bytes are not a valid manifest.
     pub fn parse(bytes: &[u8]) -> Result<Manifest, StoreError> {
         let m: Manifest =
             serde_json::from_slice(bytes).map_err(|e| StoreError::Manifest(e.to_string()))?;
@@ -165,6 +169,10 @@ pub enum Origin {
 }
 
 impl Origin {
+    /// Parse an origin: an `https://` URL or a local directory.
+    ///
+    /// # Errors
+    /// Returns `StoreError::BadOrigin` when `s` is neither an `https://` URL nor a local directory.
     pub fn parse(s: &str) -> Result<Origin, StoreError> {
         let s = s.trim().trim_end_matches('/');
         if s.starts_with("https://") {
@@ -195,6 +203,9 @@ impl Origin {
     }
 
     /// Read one file from the origin. Blocking on https (call from a background task).
+    ///
+    /// # Errors
+    /// Returns an error when the file cannot be read from the origin.
     pub fn read(&self, rel: &str) -> Result<Vec<u8>, StoreError> {
         match self {
             Origin::Local(root) => {
@@ -252,7 +263,7 @@ fn hash(bytes: &[u8]) -> String {
     // Content identity only (update diffing), not security: FNV-1a 64, hex.
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     for b in bytes {
-        h ^= *b as u64;
+        h ^= u64::from(*b);
         h = h.wrapping_mul(0x1_0000_01b3);
     }
     format!("{h:016x}")
@@ -311,6 +322,10 @@ impl Store {
         serde_json::from_slice(&bytes).ok()
     }
 
+    /// The installed manifest of `app_id`.
+    ///
+    /// # Errors
+    /// Returns an error when the app is not installed or its manifest cannot be read.
     pub fn manifest(&self, app_id: &str) -> Result<Manifest, StoreError> {
         let rec = self
             .record(app_id)
@@ -343,6 +358,9 @@ impl Store {
     }
 
     /// Read a package file for a running app (local origins read the working tree live).
+    ///
+    /// # Errors
+    /// Returns an error when the app is not installed or the file cannot be read.
     pub fn read_file(&self, app_id: &str, rel: &str) -> Result<Vec<u8>, StoreError> {
         let rec = self
             .record(app_id)
@@ -355,6 +373,9 @@ impl Store {
     }
 
     /// Fetch the manifest and produce the plan the UI confirms. Blocking on https origins.
+    ///
+    /// # Errors
+    /// Returns an error when the origin is not valid, or its manifest cannot be fetched or parsed.
     pub fn install(&self, origin: &str) -> Result<InstallPlan, StoreError> {
         let origin = Origin::parse(origin)?;
         let manifest = Manifest::parse(&origin.read("manifest.json")?)?;
@@ -365,6 +386,11 @@ impl Store {
         })
     }
 
+    /// Compare the installed app with its origin. `None` when the origin has no newer version.
+    ///
+    /// # Errors
+    /// Returns `StoreError::NotInstalled` when the app is not installed, or an error when the
+    /// origin's manifest cannot be fetched or parsed.
     pub fn check_update(&self, app_id: &str) -> Result<Option<UpdatePlan>, StoreError> {
         let rec = self
             .record(app_id)
@@ -390,10 +416,19 @@ impl Store {
         }))
     }
 
+    /// Delete an installed app's directory.
+    ///
+    /// # Errors
+    /// Returns `StoreError::Io` when the directory cannot be removed.
     pub fn remove(&self, app_id: &str) -> Result<(), StoreError> {
         io(std::fs::remove_dir_all(self.app_dir(app_id)))
     }
 
+    /// Record the permissions granted to `app_id`.
+    ///
+    /// # Errors
+    /// Returns `StoreError::NotInstalled` when the app is not installed, or an error when its
+    /// record cannot be written.
     pub fn set_granted(&self, app_id: &str, granted: Vec<String>) -> Result<(), StoreError> {
         let mut rec = self
             .record(app_id)
@@ -452,6 +487,9 @@ impl Store {
 impl InstallPlan {
     /// Fetch everything and persist. `granted` is the disclosure outcome the UI collected.
     /// Blocking on https origins.
+    ///
+    /// # Errors
+    /// Returns an error when a file cannot be fetched or the install cannot be written.
     pub fn confirm(self, granted: &[String]) -> Result<Manifest, StoreError> {
         let hashes = if self.origin.is_local() {
             HashMap::new() // local files are read live, never cached
@@ -474,6 +512,9 @@ impl InstallPlan {
 impl UpdatePlan {
     /// Fetch changed files (hash diff) and swap the record. Blocking on https origins.
     /// `extra_granted` covers [`UpdatePlan::new_permissions`] the UI re-disclosed.
+    ///
+    /// # Errors
+    /// Returns an error when a file cannot be fetched or the update cannot be written.
     pub fn apply(self, extra_granted: &[String]) -> Result<Manifest, StoreError> {
         let rec = self
             .store
@@ -560,7 +601,7 @@ mod tests {
             .expect("check")
             .expect("plan");
         assert_eq!(up.from_code, 2);
-        assert!(up.new_permissions.is_empty());
+        assert_eq!(up.new_permissions, [] as [Permission; 0]);
         up.apply(&[]).expect("apply");
         assert_eq!(store.record("org.example.t").unwrap().version_code, 3);
 

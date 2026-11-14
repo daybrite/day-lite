@@ -42,8 +42,8 @@ fn current_locale() -> String {
     day_localization::locale().get()
 }
 
-/// The candidate file stems for a locale, most specific first: `zh-CN` → ["zh-CN", "zh",
-/// "en"], deduplicated.
+/// The candidate file stems for a locale, most specific first and deduplicated: `zh-CN` gives
+/// `zh-CN`, `zh`, `en`.
 fn chain(locale: &str) -> Vec<String> {
     let mut out = vec![locale.to_string()];
     if let Some((lang, _)) = locale.split_once('-')

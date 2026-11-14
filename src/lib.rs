@@ -5,7 +5,7 @@
 //!
 //! A **superapp** (a compiled day app) embeds a [`Host`], which owns the package [`Store`]
 //! and the set of [`Bridge`]s (native capabilities exposed to scripts, each behind a
-//! permission id). [`Host::launch`] boots a miniapp's QuickJS runtime and returns its UI as
+//! permission id). [`Host::launch`] boots a miniapp's `QuickJS` runtime and returns its UI as
 //! a plain `AnyPiece`. See docs/lite.md for the whole model.
 
 mod bridges;
@@ -89,6 +89,10 @@ impl Host {
 
     /// Boot an installed miniapp. The returned [`LiteApp`] owns the JS runtime; its
     /// [`LiteApp::surface`] is the UI. Drop the app to tear the runtime down.
+    ///
+    /// # Errors
+    /// Returns a message when the app is not installed, its database cannot be opened, or its entry
+    /// module fails to load or run.
     pub fn launch(&self, app_id: &str) -> Result<LiteApp, String> {
         let record = self
             .store
@@ -110,19 +114,25 @@ impl Host {
 }
 
 impl HostBuilder {
+    #[must_use]
     pub fn store(mut self, store: Store) -> HostBuilder {
         self.store = Some(store);
         self
     }
 
+    #[must_use]
     pub fn bridge(mut self, bridge: Bridge) -> HostBuilder {
         self.bridges.push(bridge);
         self
     }
 
     /// Replace the implicit-grant list (permissions every app gets without asking).
+    #[must_use]
     pub fn implicit(mut self, permissions: &[&str]) -> HostBuilder {
-        self.implicit = permissions.iter().map(|s| s.to_string()).collect();
+        self.implicit = permissions
+            .iter()
+            .map(std::string::ToString::to_string)
+            .collect();
         self
     }
 

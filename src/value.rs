@@ -1,7 +1,7 @@
 // Copyright © The Daybrite Project
 // SPDX-License-Identifier: MPL-2.0
 
-//! DynValue ⇄ JS conversion (docs/lite.md §5): typed object graphs across the boundary,
+//! `DynValue` ⇄ JS conversion (docs/lite.md §5): typed object graphs across the boundary,
 //! never stringified eval. Pieces and signals cross as integer handles carried by small
 //! marker objects the bootstrap script wraps in classes (`__p` / `__s` keys); JS functions
 //! cross as [`DynCallback`]s holding a `Persistent<Function>` plus the context, so Rust can
@@ -14,7 +14,7 @@ use rquickjs::{Array, Context, Ctx, Function, Object, Persistent, Value};
 
 use crate::engine::{PIECES, SIGNALS, with_services};
 
-/// JS → DynValue. `depth` guards cycles from adversarial scripts.
+/// JS → `DynValue`. `depth` guards cycles from adversarial scripts.
 pub fn from_js<'js>(ctx: &Ctx<'js>, v: &Value<'js>, depth: u8) -> DynValue {
     if depth == 0 {
         return DynValue::Null;
@@ -29,7 +29,7 @@ pub fn from_js<'js>(ctx: &Ctx<'js>, v: &Value<'js>, depth: u8) -> DynValue {
         return DynValue::Num(n);
     }
     if let Some(n) = v.as_int() {
-        return DynValue::Num(n as f64);
+        return DynValue::Num(f64::from(n));
     }
     if let Some(s) = v.as_string() {
         return DynValue::Str(s.to_string().unwrap_or_default());
@@ -78,7 +78,7 @@ pub fn from_js<'js>(ctx: &Ctx<'js>, v: &Value<'js>, depth: u8) -> DynValue {
     DynValue::Null
 }
 
-/// DynValue → JS.
+/// `DynValue` → JS.
 pub fn to_js<'js>(ctx: &Ctx<'js>, v: &DynValue) -> rquickjs::Result<Value<'js>> {
     Ok(match v {
         DynValue::Null => Value::new_null(ctx.clone()),
@@ -144,6 +144,10 @@ pub fn js_callback(context: Context, saved: Persistent<Function<'static>>) -> Dy
 /// Surface a JS exception in the host log (visible in `day launch` output) and to the
 /// miniapp's `App.onError` when registered. The thrown value may be an Error object or a
 /// plain value (the host's own `throw()` throws strings), so stringify whichever arrived.
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "public signature: callers hand over the error they caught"
+)]
 pub fn report_js_error(ctx: &Ctx<'_>, what: &str, e: rquickjs::Error) {
     let detail = if e.is_exception() {
         let caught = ctx.catch();
