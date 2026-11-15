@@ -199,6 +199,7 @@ fn content_hash(s: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::assert_matches;
 
     #[test]
     fn migrations_apply_once_and_are_append_only() {
@@ -233,6 +234,6 @@ mod tests {
         assert_eq!(changes, 1);
         let rows = db.query("select n, s from t", &[]).unwrap();
         assert_eq!(rows.len(), 1);
-        assert!(matches!(rows[0][0].1, Cell::Int(7)));
+        assert_matches!(rows[0][0].1, Cell::Int(7));
     }
 }
